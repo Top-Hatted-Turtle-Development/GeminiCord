@@ -2,37 +2,34 @@ import discord                      # Import the discord library.
 import sys                          # Import sys for auto restarting/shutdowns
 from discord.ext import commands    # Import discord commands for future command usage (wink)
 import google.generativeai as genai # Import Gemini AI API
+import configparser                 # Import configparser for reading the INI file
 
-version_number = "v3.1.2" # No touchy!
-version_changelogs = "Fixed everything i broke in the last update"
+version_number = "v4.0.0" # No touchy!
+version_changelogs = "Moved configuration to config.ini instead of hardcoding it into the python file."
+
+# Read from the config.ini file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+DISCORD_TOKEN = config['SECRETS']['DISCORD_TOKEN']
+GEMINI_API_KEY = config['SECRETS']['GEMINI_API_KEY']
+CHANNEL_ID = int(config['SECRETS']['CHANNEL_ID'])
 
 
-#===============SETUP===============#a
-# Secret variables (DON'T SHARE THESE WITH ANYONE!)
-DISCORD_TOKEN = "Put your discord token from the developers page right here." # This is your discord bot token. You can get this from the Discord Developers page.
-GEMINI_API_KEY = "Gemini API key goes here!" # This is your Gemini API key.
-CHANNEL_ID = 0000000000000000000 # This is the channel ID that will the bot will be reading/sending messages from. Enable developer mode in discord, right click the channel, and then "Copy Channel ID"
-
-# Configuration variables
-SHOW_TYPING = True # This will show the "GeminiBot is typing.." whenever text is being generated.
-CLEAR_MESSAGES_ON_START = True # This will DELETE ALL MESSAGES in the channel upon startup of the bot. For public servers or multi-purpose channels, I would recommend setting this to FALSE! However, if you want an fresh start for each session, then go ahead. Just be warned that it deletes all messages! Poof! Gone! (Scary..)
-POWER_CONTROL = True # This will let the bot restart and shutdown by itself. For public uses, turn this off.
-
+SHOW_TYPING = config['CONFIG']['SHOW_TYPING']
+CLEAR_MESSAGES_ON_START = config['CONFIG']['CLEAR_MESSAGES_ON_START']
+POWER_CONTROL = config['CONFIG']['POWER_CONTROL'] 
+  
 # AI Properties
-model_name = 'gemini-1.0-pro'  # This is the AI model that will be used to generate text.
-CREATOR_NAME = 'coolboyyt'
-SERVER_NAME = ''
-SERVER_DESC = ''
-AI_BEHAVIOR = 'You are an AI tech support bot. Your purpose is to help users with coding. Do not awnser any other questions UNLESS it is about coding or technology. Do not talk about any other topics apart from coding or technology.'
-#===================================#
-
-
-
-
+model_name = config['AI_PROPERTIES']['model_name']
+CREATOR_NAME = config['AI_PROPERTIES']['CREATOR_NAME']
+SERVER_NAME = config['AI_PROPERTIES']['CREATOR_NAME']
+SERVER_DESC = config['AI_PROPERTIES']['SERVER_DESC']
+AI_BEHAVIOR = config['AI_PROPERTIES']['AI_BEHAVIOR']
 
 
 # AI BEHAVIOR SETUP
-basic_setup_msg = "You are a Discord bot named GeminiCord. You will only refer to yourself as GeminiCord. Do not use control codes, such as <OoB> and more. Do not use <u> to underline text. There are multiple people in this chat. You will be recieving messages in a format like username: message. Do not send messages that way! Only respond how you normally would. When users ask who they are, they mean what is their username. Start with an introductory message."
+basic_setup_msg = "You are a Discord bot named GeminiCord. Your code is open-source and can be found at https://github.com/coolboy67yt/GeminiCord You will only refer to yourself as GeminiCord. Do not use control codes, such as <OoB> and more. Do not use <u> to underline text. There are multiple people in this chat. You will be recieving messages in a format like username: message. Do not send messages that way! Only respond how you normally would. When users ask who they are, they mean what is their username. Start with an introductory message."
 
 # If POWER_CONTROL is on, explain to the AI how to use it.
 power_control_msg = ""
@@ -118,7 +115,8 @@ async def on_ready():
                 await clear_channel_messages(channel)
 
             # Send the START_MESSAGE to the AI upon startup.
-            start_response = generate_text(START_MESSAGE)
+            unformattedStartResponse = generate_text(START_MESSAGE)
+            start_response = f"# **{unformattedStartResponse}**"
 
             # Split the message because of max character limits (ugh)
             chunks = split_message(start_response)
@@ -128,9 +126,12 @@ async def on_ready():
             # Uh oh! You made an oopsies, didn't you? If you see this error, then you have the wrong channel id! 
             # Make sure the bot is in the server, has permissions, and make sure you typed it right!
             print(f"Channel with ID {CHANNEL_ID} not found.")
+            channel = bot.get_channel(CHANNEL_ID)
+            print(channel)
     except Exception as e:
                 channel = bot.get_channel(CHANNEL_ID)
                 await channel.send(f"An error occured. ```{e}```")
+                print(f"An error occured {e}")
 
 @bot.event
 async def on_message(message):
