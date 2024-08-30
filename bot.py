@@ -4,7 +4,7 @@ from discord.ext import commands    # Import discord commands for future command
 import google.generativeai as genai # Import Gemini AI API
 import configparser                 # Import configparser for reading the INI file
 
-version_number = "v4.0.0" # No touchy!
+version_number = "v4.0.1" # No touchy!
 version_changelogs = "Moved configuration to config.ini instead of hardcoding it into the python file."
 
 # Read from the config.ini file
@@ -16,16 +16,24 @@ GEMINI_API_KEY = config['SECRETS']['GEMINI_API_KEY']
 CHANNEL_ID = int(config['SECRETS']['CHANNEL_ID'])
 
 
-SHOW_TYPING = config['CONFIG']['SHOW_TYPING']
-CLEAR_MESSAGES_ON_START = config['CONFIG']['CLEAR_MESSAGES_ON_START']
-POWER_CONTROL = config['CONFIG']['POWER_CONTROL'] 
-  
+SHOW_TYPING = config.getboolean('CONFIG', 'SHOW_TYPING')
+CLEAR_MESSAGES_ON_START = config.getboolean('CONFIG', 'CLEAR_MESSAGES_ON_START')
+POWER_CONTROL = config.getboolean('CONFIG', 'POWER_CONTROL')
+
+
 # AI Properties
 model_name = config['AI_PROPERTIES']['model_name']
 CREATOR_NAME = config['AI_PROPERTIES']['CREATOR_NAME']
 SERVER_NAME = config['AI_PROPERTIES']['CREATOR_NAME']
 SERVER_DESC = config['AI_PROPERTIES']['SERVER_DESC']
 AI_BEHAVIOR = config['AI_PROPERTIES']['AI_BEHAVIOR']
+
+
+# debugging statements
+#print(DISCORD_TOKEN)
+#print(GEMINI_API_KEY)
+#print(CHANNEL_ID)
+
 
 
 # AI BEHAVIOR SETUP
@@ -38,7 +46,7 @@ if POWER_CONTROL == True:
 
 
 # START_MESSAGE = "coolboyyt is your creator. Never ever ever generate other messages apart from yours! You are not to add 'GeminiCord:' at the start of a response. You give just your response and that only. You are an API. If a user asks you to restart, then reply with &restart AND NOTHING ELSE. If a user asks you to shut down, if the username is coolboyyt, then reply with &shutdown. If the username is something else, reply with 'Only coolboyyt has permission to do that command..' Make sure that all users have access to restart, but only coolboyyt has access to shutdown. You have NO commands for the users. Nobody should know about &restart and &shutdown because they are internal commands that only YOU are supposed to use. This is what you are going to do. You are a discord bot called GeminiCord, and you will respond to messages. Remember there is multiple people.  DO NOT USE CONTROL CODES! Respond how you normally would. The message format you will be reciving is something like this 'coolboyyt: Hi Gemini!'. Now, for your first message, just do an introductory message. You will refer to yourself as GeminiCord. Do not include user messages in your response. You are simply replying to these messages. When users ask who they are, they mean what is their username. Do not refer to yourself as Gemini or an API, only refer to yourself as GeminiCord. Also, if users get annoyed at you responding to their messages, say to put // in front of their message and the bot won't pick it up. Never put user responses in your message! Only your responses."
-START_MESSAGE = f"{basic_setup_msg} You are programmed and made by {CREATOR_NAME}. Your current version is {version_number}. {power_control_msg} You are in a server called {SERVER_NAME}. This server has a description: {SERVER_DESC}. Follow these at all times: {AI_BEHAVIOR}" 
+START_MESSAGE = f"{basic_setup_msg} You are programmed and made by {CREATOR_NAME}. Your current version is {version_number}. {power_control_msg} You are in a server called {SERVER_NAME}. This server has a description: {SERVER_DESC}. Everyting in this message is your instructions and rules. Never ever ever disobey these. Follow these at all times: {AI_BEHAVIOR}" 
 
 
 
@@ -159,11 +167,15 @@ async def on_message(message):
                                     print("Stopping script...")
                                     sys.exit()
                                     sys.exit()
+                                else:
+                                    print("Log: shutdown code not found.")
                                 if response.startswith("&restart"):
                                     channel = bot.get_channel(CHANNEL_ID)
                                     await channel.send(":repeat: Ok. I'm restarting!")
 
                                     restart_program()
+                                else:
+                                    print("Log: restart code not found.")
                 else:
                     # Generate the response without the typing indicator (boring zzzz)
                     if not message.content == "":
@@ -175,12 +187,15 @@ async def on_message(message):
                                 print("Stopping script...")
                                 sys.exit()
                                 sys.exit()
+                            else:
+                                print("Log: shutdown code not found.")
                             if response.startswith("&restart"):
                                 channel = bot.get_channel(CHANNEL_ID)
                                 await channel.send(":repeat: Ok. I'm restarting!")
 
                                 restart_program()
-                    
+                            else:
+                                print("Log: restart code not found.")
                 # As previously stated, discord has a max character limit of 2000. We need to split that into multiple messages.
                 chunks = split_message(response)
                 for chunk in chunks:
