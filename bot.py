@@ -71,7 +71,7 @@ START_MESSAGE = f"{basic_setup_msg} You are programmed and made by {CREATOR_NAME
 intents = discord.Intents.all()
 intents.presences = True
 
-bot = commands.Bot(intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 
 def create_conversation():
