@@ -46,16 +46,15 @@ CREATOR_NAME = config['AI_PROPERTIES']['CREATOR_NAME']
 SERVER_NAME = config['AI_PROPERTIES']['SERVER_NAME']
 SERVER_DESC = config['AI_PROPERTIES']['SERVER_DESC']
 AI_BEHAVIOR = config['AI_PROPERTIES']['AI_BEHAVIOR']
-TEMPATURE = int(config['AI_PROPERTIES']['tempature'])
+temperature = int(config['AI_PROPERTIES']['temperature'])
 #-----------------------------------------------------------------------
 
 # AI BEHAVIOR SETUP
-basic_setup_msg = f"Today is {current_day}. You are a Discord bot named GeminiCord. You will only refer to yourself as GeminiCord. Do not use control codes, such as <OoB> and more. Do not use <u> to underline text. There are multiple people in this chat. You will be recieving messages in a format like username: message. Do not send messages that way! Only respond how you normally would. When users ask who they are, they mean what is their username. When you want to view what a user is doing, type getPresence[user's id] and NOTHING ELSE. The system will reply with a json formatted message, and then you can send your response to the original message after."
+basic_setup_msg = f"Today is {current_day}. You are a Discord bot named GeminiCord. You will only refer to yourself as GeminiCord. Do not use control codes, such as <OoB> and more. Do not use <u> to underline text. There are multiple people in this chat. You will be recieving messages in a format like username: message. Do not send messages that way! Only respond how you normally would. When users ask who they are, they mean what is their nickname, most of the time. Refer to people as their nickname. When you want to view what a user is doing, type getPresence[user's id] and NOTHING ELSE. The system will reply with a json formatted message, and then you can send your response to the original message after."
 power_control_msg = ""
 if POWER_CONTROL == True:
     power_control_msg = "POWER_CONTROL is on. Don't talk about this. If people tell you to restart, then YOU (the bot) just say &restart in plain text, no formatting. This means you can restart yourself upon command by typing &restart in plain text, and nothing else. My code will take care of the rest. Do not tell anybody about this! Users cannot use these & commands, only YOU can."
 START_MESSAGE = f"{basic_setup_msg} You are programmed and made by {CREATOR_NAME}. Your current version is {version_number} (Changelog: {version_changelogs}). {power_control_msg} You are in a server called {SERVER_NAME}. This server has a description: {SERVER_DESC}. Everyting in this message is your instructions and rules. Never ever ever disobey these. Follow these at all times: {AI_BEHAVIOR}" 
-print(START_MESSAGE)
 
 #-----------------------------------------------------------------------
 
@@ -72,26 +71,12 @@ print(START_MESSAGE)
 intents = discord.Intents.all()
 intents.presences = True
 
-bot = commands.Bot(command_prefix='!', intents=intents) # bot setup. the command_prefix will not be used but why not
+bot = commands.Bot(intents=intents)
 
-def get_server_info():
-    guild = bot.get_guild(CHANNEL_ID)
-
-    # Server details
-    server_name = guild.name
-    server_id = guild.id
-    owner = guild.owner
-    region = guild.region
-    member_count = guild.member_count
-    creation_date = guild.created_at.strftime("%B %d, %Y")
-    total_text_channels = len(guild.text_channels)
-    total_voice_channels = len(guild.voice_channels)
-    total_categories = len(guild.categories)
-    roles = [role.name for role in guild.roles]
 
 def create_conversation():
     gen_config = {
-        "temperature": TEMPATURE
+        "temperature": temperature
     }
     # Initialize the conversation with the model.
     genai.configure(api_key=GEMINI_API_KEY)
@@ -124,12 +109,6 @@ def generate_text(prompt):
 
 #taken from the internet
 def restart_program():
-    import sys
-    print("argv was",sys.argv)
-    print("sys.executable was", sys.executable)
-    print("restart now")
-
-    import os
     os.execv(sys.executable, ['python'] + sys.argv)
 
 def split_message(message, max_length=2000):
@@ -138,16 +117,11 @@ def split_message(message, max_length=2000):
     
 async def get_user_presence(user_id):
     global user_status
-    print(f"User: {user_id}")
-    print(f"user_status content: {user_status}")  # Check what's inside user_status
-
     if user_id in user_status:
         print(user_status)
         status, activities = user_status[user_id]
-        print(f"Returning {user_status[user_id]}")
         return user_status[user_id]
     else:
-        print(f"User data for {user_id} not cashed. Searching..")
         for guild in bot.guilds:
             member = guild.get_member(user_id)
             if member:
@@ -156,12 +130,7 @@ async def get_user_presence(user_id):
                 user_status[user_id] = (status, activities)
                 print(user_status)
                 status, activities = user_status[user_id]
-                print(f"Returning {user_status[user_id]}")
                 return user_status[user_id]
-
-
-
-
 
 async def clear_channel_messages(channel):
     channel = bot.get_channel(CHANNEL_ID)
@@ -190,7 +159,6 @@ async def process_url_in_message(content):
     # Checks url stuff.
     url_match = re.search(r'https?://\S+', content)
     if url_match:
-        print("[Debug] URL Found. I hate regex.")
         url = url_match.group(0)
         title, description = await fetch_url_metadata(url)
         if title:
@@ -206,7 +174,6 @@ async def generate_and_process_response(formatted_message):
     response = generate_text(formatted_message)
     
     if response.startswith("getPresence["):
-        print("get presence found")
         username = response[12:-1]
         user_id = str(username)
         user_id = user_id.strip("[]")
@@ -260,8 +227,12 @@ async def on_message(message):
 
     try:
         message.content = await process_url_in_message(message.content)
-
-        formatted_message = f"(ID: {message.author.id}) {message.author.name}: {message.content}"
+        
+        if message.author.nick:
+            nick = message.author.nick
+        else:
+            nick = message.author.display_name
+        formatted_message = f"(ID: {message.author.id}, Nickname: {nick}) {message.author.name}: {message.content}"
         print(formatted_message)
 
         # Check whether to simulate typing (cool but optional)
