@@ -1,6 +1,8 @@
+# GEMINICORD WILL NO LONGER RECIEVE UPDATES. CHECK bye.md FOR MORE INFORMATION.
+
 # GeminiCord
 GeminiCord is a discord bot that uses Google's Gemini AI to respond to messages from all users in a certain channel.
-### Latest version: v4.1.1
+### Latest version: v4.2.0
 
 
 ## How to setup (VERSIONS v4.0.0+)
